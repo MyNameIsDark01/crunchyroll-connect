@@ -116,7 +116,6 @@ class CrunchyrollServer:
         # Note to check for expiration of the session and clear data to prevent re-using the same session maybe.
         if validate_request(response):
             # Create user object
-            print(response)
             user_data = response['data']['user']
             user = User(
                 user_id=user_data['user_id'],
@@ -160,8 +159,6 @@ class CrunchyrollServer:
         if validate_request(response):
             self.settings.clear_store()
             self.session.cookies.clear()
-
-            print("logged out")
         else:
             raise ValueError('Request Failed!\n\n{}'.format(response))
 
@@ -186,6 +183,22 @@ class CrunchyrollServer:
 
         else:
             raise ValueError('Request Failed!\n\n{}'.format(response))
+
+    @session_required
+    def get_series_by_id(self, collection_id):
+        url = self.get_url(RequestType.INFO)
+
+        data = {
+            "locale": "itIT",
+            "collection_id": collection_id,
+            "session_id": self.settings.store['session_id'],
+            'device_type': self.device_type,
+            'device_id': self.settings.store['device_id'],
+        }
+
+        response = self.session.get(url, params=data, cookies=self.session.cookies).json()
+        if validate_request(response):
+            return response['data']
 
     @session_required
     def get_series_id(self, query):
@@ -330,14 +343,11 @@ class CrunchyrollServer:
             'device_type': self.device_type,
             'device_id': self.settings.store['device_id'],
             'media_type': 'anime',
-            'limit': limit,
-            'offset': offset,
             'collection_id': collection_id,
             'locale': 'itIT'
         }
 
         response = self.session.get(url, params=data, cookies=self.session.cookies).json()
-
         if validate_request(response):
             media_list = []
             episode_list = response['data']
@@ -399,6 +409,9 @@ class CrunchyrollServer:
             playlist = m3u8.load(url)  # this could also be an absolute filename
             m3u8_playlist = playlist.data['playlists']
             media_streams = {}
+            media_streams['collection_name'] = response['data']['collection_name']
+            media_streams['episode_number'] = response['data']['episode_number']
+
             urls = []
             for i in range(len(m3u8_playlist)):
                 #Don't visit duplicates
