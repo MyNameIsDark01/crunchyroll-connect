@@ -432,7 +432,7 @@ class CrunchyrollServer:
             raise ValueError('Request Failed!\n\n{}'.format(response))
 
     @session_required
-    def search(self, q, media_type:str ='anime', filter='alpha', limit=10, offset=0):
+    def search(self, q, media_type:str ='anime', filter='alpha', limit=1000, offset=0):
         url = self.get_url(RequestType.AUTOCOMPLETE)
 
         data = {
