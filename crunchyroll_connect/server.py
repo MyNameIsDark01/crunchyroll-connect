@@ -344,7 +344,9 @@ class CrunchyrollServer:
             'device_id': self.settings.store['device_id'],
             'media_type': 'anime',
             'collection_id': collection_id,
-            'locale': 'itIT'
+            'locale': 'itIT',
+            'limit': limit,
+            'offset': offset
         }
 
         response = self.session.get(url, params=data, cookies=self.session.cookies).json()
@@ -430,7 +432,7 @@ class CrunchyrollServer:
             raise ValueError('Request Failed!\n\n{}'.format(response))
 
     @session_required
-    def search(self, q, media_type, filter=None, limit=10, offset=0):
+    def search(self, q, media_type:str ='anime', filter='alpha', limit=10, offset=0):
         url = self.get_url(RequestType.AUTOCOMPLETE)
 
         data = {
