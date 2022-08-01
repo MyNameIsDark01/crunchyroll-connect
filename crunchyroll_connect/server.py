@@ -52,13 +52,12 @@ def session_required(function):
 
 
 class CrunchyrollServer:
-    def __init__(self):
+    def __init__(self, config: str):
         self.domain = 'api.crunchyroll.com'
         self.token = 'LNDJgOit5yaRIWN'
         self.device_type = 'com.crunchyroll.windows.desktop'
         self.version = 0
-        self.english = 'enUS'
-        self.settings = Config()
+        self.settings = Config(path=config)
         self.settings.init_store()
         self.session = requests.Session()
 
@@ -94,15 +93,15 @@ class CrunchyrollServer:
             raise ValueError('Request Failed!\n\n{}'.format(response))
 
     def login(self, account=None, password=None):
-        if self.settings.store['user'] is not None:
+        if self.settings.store['user']:
             current_datetime = datetime.now()
-            expires = self.settings.store['user'].expires
+            expires = self.settings.store['user']['expires'].split('.')[0]
+            expires = datetime.strptime(expires, "%Y-%m-%dT%H:%M:%S")
 
             if current_datetime <= expires:
                 return True
 
             else:
-                print("expired")
                 self.settings.clear_store()
 
         self.create_session()
@@ -117,6 +116,7 @@ class CrunchyrollServer:
         # Note to check for expiration of the session and clear data to prevent re-using the same session maybe.
         if validate_request(response):
             # Create user object
+            print(response)
             user_data = response['data']['user']
             user = User(
                 user_id=user_data['user_id'],
@@ -130,10 +130,11 @@ class CrunchyrollServer:
                 created=user_data['created'],
                 expires=datetime.now() + timedelta(hours=12),
                 is_publisher=user_data['is_publisher']
-            )
+            ).__dict__
 
             self.settings.store['auth'] = response['data']['auth']
             self.settings.store['user'] = user
+            self.settings.save()
 
             return True
 
@@ -165,7 +166,7 @@ class CrunchyrollServer:
             raise ValueError('Request Failed!\n\n{}'.format(response))
 
     def close(self):
-        self.settings.close_store()
+        self.settings.save()
         self.session.close()
 
     @session_required
@@ -234,7 +235,8 @@ class CrunchyrollServer:
             'device_type': self.device_type,
             'device_id': self.settings.store['device_id'],
             'media_type': 'anime',
-            'series_id': series_id
+            'series_id': series_id,
+            'locale': 'itIT'
         }
 
         response = self.session.get(url, params=data, cookies=self.session.cookies).json()
@@ -330,7 +332,8 @@ class CrunchyrollServer:
             'media_type': 'anime',
             'limit': limit,
             'offset': offset,
-            'collection_id': collection_id
+            'collection_id': collection_id,
+            'locale': 'itIT'
         }
 
         response = self.session.get(url, params=data, cookies=self.session.cookies).json()
@@ -371,13 +374,20 @@ class CrunchyrollServer:
     def get_media_stream(self, media_id):
         url = self.get_url(RequestType.INFO)
 
+        fields = [
+            "media.collection_name",
+            "media.episode_number",
+            "media.stream_data"
+        ]
+
         data = {
             'session_id': self.settings.store['session_id'],
             'device_type': self.device_type,
             'device_id': self.settings.store['device_id'],
             'media_type': 'anime',
+            'locale': 'itIT',
             'media_id': media_id,
-            'fields': 'media.stream_data,media.playhead'
+            'fields': ",".join(fields),
         }
 
         response = self.session.get(url, params=data, cookies=self.session.cookies).json()
