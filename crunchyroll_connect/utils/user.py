@@ -82,7 +82,7 @@ class Config:
         self.store['auth'] = ""
         self.store['user_id'] = ""
         self.store['cr_locales'] = None
-        self.save
+        self.save()
 
     def is_logged_in(self):
         return self.store['account'] != "" and self.store['password'] != ""
