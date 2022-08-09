@@ -46,7 +46,8 @@ def session_required(function):
         if self.settings.store['user']:
             current_datetime = datetime.now()
             expires = self.settings.store['user']['expires'].split('.')[0]
-
+            expires = datetime.strptime(expires, "%Y-%m-%dT%H:%M:%S")
+            
             if current_datetime > expires:
                 self.login()
         else:
