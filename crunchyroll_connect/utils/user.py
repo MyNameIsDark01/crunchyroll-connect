@@ -73,17 +73,6 @@ class Config:
             self.store = store
             self.save()
 
-    def clear_store(self):
-        if not self.store: self.init_store()
-
-        self.store['account'] = ""
-        self.store['password'] = ""
-        self.store['user'] = None
-        self.store['auth'] = ""
-        self.store['user_id'] = ""
-        self.store['cr_locales'] = None
-        self.save()
-
     def is_logged_in(self):
         return self.store['account'] != "" and self.store['password'] != ""
 

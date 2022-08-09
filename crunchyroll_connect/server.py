@@ -11,7 +11,7 @@ def validate_request(req):
     if not isinstance(req, dict):
         return False
 
-    if req['error'] is False and req['code'] == 'ok':
+    if not req['error'] and req['code'] == 'ok':
         return True
     else:
         return False
@@ -43,6 +43,15 @@ def res_to_quality(resolution):
 # Evaluate if session is valid
 def session_required(function):
     def wrap(self, *args, **kwargs):
+        if self.settings.store['user']:
+            current_datetime = datetime.now()
+            expires = self.settings.store['user']['expires'].split('.')[0]
+
+            if current_datetime > expires:
+                self.login()
+        else:
+            self.login()
+
         if self.settings.store['session_id'] != "":
             return function(self, *args, **kwargs)
         else:
@@ -100,9 +109,6 @@ class CrunchyrollServer:
 
             if current_datetime <= expires:
                 return True
-
-            else:
-                self.settings.clear_store()
 
         self.create_session()
         url = self.get_url(RequestType.LOGIN)
