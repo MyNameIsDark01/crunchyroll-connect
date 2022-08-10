@@ -45,8 +45,10 @@ def session_required(function):
     def wrap(self, *args, **kwargs):
         if self.settings.store['user']:
             current_datetime = datetime.now()
-            expires = self.settings.store['user']['expires'].split('.')[0]
-            expires = datetime.strptime(expires, "%Y-%m-%dT%H:%M:%S")
+            expires = self.settings.store['user']['expires']
+            if isinstance(expires, str):
+                expires = expires.split('.')[0]
+                expires = datetime.strptime(expires, "%Y-%m-%dT%H:%M:%S")
             
             if current_datetime > expires:
                 self.login()
