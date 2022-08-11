@@ -16,17 +16,6 @@ def validate_request(req):
     else:
         return False
 
-
-def login_required(function):
-    def wrap(self, *args, **kwargs):
-        if len(self.settings.store['auth']) > 0:
-            return function(self, *args, **kwargs)
-        else:
-            raise ValueError('Must be logged in to access to function')
-
-    return wrap
-
-
 def res_to_quality(resolution):
     if resolution == '1280x720':
         return "high"
@@ -41,7 +30,7 @@ def res_to_quality(resolution):
 
 
 # Evaluate if session is valid
-def session_required(function):
+def auth_required(function):
     def wrap(self, *args, **kwargs):
         if self.settings.store['user']:
             current_datetime = datetime.now()
@@ -55,10 +44,7 @@ def session_required(function):
         else:
             self.login()
 
-        if self.settings.store['session_id'] != "":
-            return function(self, *args, **kwargs)
-        else:
-            raise ValueError('Illegal action: A valid session must be started.')
+        return function(self, *args, **kwargs)
 
     return wrap
 
@@ -149,8 +135,7 @@ class CrunchyrollServer:
         else:
             raise ValueError('Request Failed!\n\n{}'.format(response))
 
-    @login_required
-    @session_required
+    @auth_required
     def logout(self):
         url = self.get_url(RequestType.LOGOUT)
 
@@ -175,7 +160,7 @@ class CrunchyrollServer:
         self.settings.save()
         self.session.close()
 
-    @session_required
+    @auth_required
     def fetch_locales(self):
         url = self.get_url(RequestType.LIST_LOCALES)
 
@@ -193,7 +178,7 @@ class CrunchyrollServer:
         else:
             raise ValueError('Request Failed!\n\n{}'.format(response))
 
-    @session_required
+    @auth_required
     def get_series_by_id(self, collection_id):
         url = self.get_url(RequestType.INFO)
 
@@ -209,7 +194,7 @@ class CrunchyrollServer:
         if validate_request(response):
             return response['data']
 
-    @session_required
+    @auth_required
     def get_series_id(self, query):
         """
         Searches for the seriesID of an anime in the Crunchyroll catalogue. If it is present return the ID
@@ -247,7 +232,7 @@ class CrunchyrollServer:
         else:
             raise ValueError('Request Failed!\n\n{}'.format(response))
 
-    @session_required
+    @auth_required
     def get_collections(self, series_id):
 
         url = self.get_url(RequestType.LIST_COLLECTION)
@@ -290,7 +275,7 @@ class CrunchyrollServer:
         else:
             raise ValueError('Request Failed!\n\n{}'.format(response))
 
-    @session_required
+    @auth_required
     def filter_series(self, limit: int = 10, offset: int = 0, filter_type: Filters = None, filter_tag: str = None):
         """
         Returns a list of series
@@ -343,7 +328,7 @@ class CrunchyrollServer:
         else:
             raise ValueError('Request Failed!\n\n{}'.format(response))
 
-    @session_required
+    @auth_required
     def get_episodes(self, collection_id, limit=1000, offset=0):
         url = self.get_url(RequestType.LIST_MEDIA)
 
@@ -390,8 +375,7 @@ class CrunchyrollServer:
         else:
             raise ValueError('Request Failed!\n\n{}'.format(response))
 
-    @login_required
-    @session_required
+    @auth_required
     def get_media_stream(self, media_id):
         url = self.get_url(RequestType.INFO)
 
@@ -440,7 +424,7 @@ class CrunchyrollServer:
         else:
             raise ValueError('Request Failed!\n\n{}'.format(response))
 
-    @session_required
+    @auth_required
     def search(self, q, media_type:str ='anime', filter='alpha', limit=1000, offset=0):
         url = self.get_url(RequestType.AUTOCOMPLETE)
 
