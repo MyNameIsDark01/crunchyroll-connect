@@ -90,7 +90,10 @@ class CrunchyrollServer:
         else:
             raise ValueError('Request Failed!\n\n{}'.format(response))
 
-    def login(self, account=None, password=None):
+    def login(self):
+        account = self.settings.store['account']
+        password = self.settings.store['password']
+
         if self.settings.store['user']:
             current_datetime = datetime.now()
             expires = self.settings.store['user']['expires'].split('.')[0]
@@ -397,15 +400,19 @@ class CrunchyrollServer:
 
         response = self.session.get(url, params=data, cookies=self.session.cookies).json()
         if validate_request(response):
-            stream_data = response['data']['stream_data']['streams']
-            expires = stream_data[0]['expires']
-            url = stream_data[0]["url"]
+            stream_data = response['data']['stream_data']
+            streams = stream_data['streams']
+            expires = streams[0]['expires']
+            url = streams[0]["url"]
 
             playlist = m3u8.load(url)  # this could also be an absolute filename
             m3u8_playlist = playlist.data['playlists']
             media_streams = {}
             media_streams['collection_name'] = response['data']['collection_name']
             media_streams['episode_number'] = response['data']['episode_number']
+            media_streams['hardsub_lang'] = stream_data['hardsub_lang']
+            media_streams['audio_lang'] = stream_data['audio_lang']
+            media_streams['format'] = stream_data['format']
 
             urls = []
             for i in range(len(m3u8_playlist)):
@@ -440,7 +447,7 @@ class CrunchyrollServer:
         }
 
         response = self.session.get(url, params=data, cookies=self.session.cookies).json()
-
+        print(response)
         if validate_request(response):
             series = []
 
