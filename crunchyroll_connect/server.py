@@ -444,7 +444,7 @@ class CrunchyrollServer:
             'limit': limit,
             'offset': offset,
             'filter': filter,
-            'locale': 'itIT',
+            'locale': 'enUS',
         }
 
         response = self.session.get(url, params=data, cookies=self.session.cookies).json()
