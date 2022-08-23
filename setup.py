@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name="crunchyroll_connect",
-    version="1.4.6",
+    version="1.4.7",
     author="mynameisdark01",
     description="API for Crunchyroll BETA",
     url="https://github.com/MyNameIsDark01/crunchyroll-connect",
