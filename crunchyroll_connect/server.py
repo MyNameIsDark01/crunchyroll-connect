@@ -453,7 +453,6 @@ class CrunchyrollServer:
         }
 
         response = self.session.get(url, params=data, cookies=self.session.cookies).json()
-        print(response)
         if validate_request(response):
             series = []
 
