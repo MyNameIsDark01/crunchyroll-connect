@@ -406,6 +406,8 @@ class CrunchyrollServer:
         response = self.session.get(url, params=data, cookies=self.session.cookies).json()
         if validate_request(response):
             stream_data = response['data']['stream_data']
+            if not stream_data: 
+                return None
             streams = stream_data['streams']
             expires = streams[0]['expires']
             url = streams[0]["url"]
