@@ -50,11 +50,12 @@ def auth_required(function):
 
 
 class CrunchyrollServer:
-    def __init__(self, config: str):
+    def __init__(self, config: str, locale: str = 'enUS'):
         self.domain = 'api.crunchyroll.com'
         self.token = 'LNDJgOit5yaRIWN'
         self.device_type = 'com.crunchyroll.windows.desktop'
         self.version = 0
+        self.locale = locale
         self.settings = Config(path=config)
         self.settings.init_store()
         self.session = requests.Session()
@@ -90,9 +91,11 @@ class CrunchyrollServer:
         else:
             raise ValueError('Request Failed!\n\n{}'.format(response))
 
-    def login(self):
-        account = self.settings.store['account']
-        password = self.settings.store['password']
+    def login(self, username: str = None, password: str = None):
+        if not username: username = self.settings.store['account']
+        else: self.settings.store['account'] = username
+        if not password: password = self.settings.store['password']
+        else: self.settings.store['password'] = password
 
         if self.settings.store['user']:
             current_datetime = datetime.now()
@@ -105,7 +108,7 @@ class CrunchyrollServer:
         self.create_session()
         url = self.get_url(RequestType.LOGIN)
         data = {
-            'account': account,
+            'account': username,
             'password': password,
             'session_id': self.settings.store['session_id']
         }
@@ -172,10 +175,11 @@ class CrunchyrollServer:
             'device_type': self.device_type,
             'device_id': self.settings.store['device_id']
         }
-        response = self.session.get(url, data).json()
+        response = self.session.get(url, params=data).json()
 
         if validate_request(response):
             self.settings.store['cr_locales'] = response['data']
+            self.settings.save()
             return True
 
         else:
@@ -186,7 +190,7 @@ class CrunchyrollServer:
         url = self.get_url(RequestType.INFO)
 
         data = {
-            "locale": "itIT",
+            "locale": self.locale,
             "collection_id": collection_id,
             "session_id": self.settings.store['session_id'],
             'device_type': self.device_type,
@@ -212,7 +216,8 @@ class CrunchyrollServer:
             'device_id': self.settings.store['device_id'],
             'q': query,
             'media_types': 'anime',
-            'limit': 10  # Artificially limit to 10 results
+            'limit': 10,  # Artificially limit to 10 results
+            'locale': self.locale
         }
 
         response = self.session.get(url, params=data, cookies=self.session.cookies).json()
@@ -246,7 +251,7 @@ class CrunchyrollServer:
             'device_id': self.settings.store['device_id'],
             'media_type': 'anime',
             'series_id': series_id,
-            'locale': 'itIT'
+            'locale': self.locale
         }
 
         response = self.session.get(url, params=data, cookies=self.session.cookies).json()
@@ -341,7 +346,7 @@ class CrunchyrollServer:
             'device_id': self.settings.store['device_id'],
             'media_type': 'anime',
             'collection_id': collection_id,
-            'locale': 'itIT',
+            'locale': self.locale,
             'limit': limit,
             'offset': offset
         }
@@ -393,7 +398,7 @@ class CrunchyrollServer:
             'device_type': self.device_type,
             'device_id': self.settings.store['device_id'],
             'media_type': 'anime',
-            'locale': 'itIT',
+            'locale': self.locale,
             'media_id': media_id,
             'fields': ",".join(fields),
         }
@@ -444,7 +449,7 @@ class CrunchyrollServer:
             'limit': limit,
             'offset': offset,
             'filter': filter,
-            'locale': 'enUS',
+            'locale': self.locale
         }
 
         response = self.session.get(url, params=data, cookies=self.session.cookies).json()
