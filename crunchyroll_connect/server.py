@@ -451,7 +451,7 @@ class CrunchyrollServer:
             'limit': limit,
             'offset': offset,
             'filter': filter,
-            'locale': self.locale
+            #'locale': self.locale
         }
 
         response = self.session.get(url, params=data, cookies=self.session.cookies).json()
@@ -459,6 +459,7 @@ class CrunchyrollServer:
             series = []
 
             for el in response['data']:
+                print(el)
                 series.append(Series(
                     series_id=el['series_id'],
                     etp_guid=el['etp_guid'],
