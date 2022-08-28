@@ -59,7 +59,7 @@ class CrunchyrollServer:
         self.settings = Config(path=config)
         self.settings.init_store()
         self.session = requests.Session()
-        self.session.proxies = self.proxy
+        self.session.proxies = proxy
 
     def get_url(self, req):
         if not isinstance(req, RequestType):
