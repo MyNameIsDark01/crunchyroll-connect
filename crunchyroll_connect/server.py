@@ -1,3 +1,4 @@
+from gc import is_finalized
 import requests
 import m3u8
 
@@ -7,12 +8,23 @@ from .utils.user import Config, User, datetime, timedelta
 from .utils.media import Media, MediaStream
 
 
+class ReAuthenticate(Exception):
+    """"""
+    pass
+
+
 def validate_request(req):
     if not isinstance(req, dict):
         return False
 
-    if not req['error'] and req['code'] == 'ok':
+    err = req.get('error')
+    code = req.get('code')
+    message = req.get('message')
+
+    if not err and code == 'ok':
         return True
+    elif err in ["bad_session"]:
+        return ReAuthenticate()
     else:
         return False
 
@@ -50,7 +62,7 @@ def auth_required(function):
 
 
 class CrunchyrollServer:
-    def __init__(self, config: str, locale: str = 'enUS', proxy={}):
+    def __init__(self, config: str, locale: str = 'enUS', proxy: dict = {}):
         self.domain = 'api.crunchyroll.com'
         self.token = 'LNDJgOit5yaRIWN'
         self.device_type = 'com.crunchyroll.windows.desktop'
@@ -97,14 +109,6 @@ class CrunchyrollServer:
         else: self.settings.store['account'] = username
         if not password: password = self.settings.store['password']
         else: self.settings.store['password'] = password
-
-        if self.settings.store['user']:
-            current_datetime = datetime.now()
-            expires = self.settings.store['user']['expires'].split('.')[0]
-            expires = datetime.strptime(expires, "%Y-%m-%dT%H:%M:%S")
-
-            if current_datetime <= expires:
-                return True
 
         self.create_session()
         url = self.get_url(RequestType.LOGIN)
@@ -158,7 +162,6 @@ class CrunchyrollServer:
 
         response = self.session.post(url, params, cookies=self.session.cookies).json()
         if validate_request(response):
-            self.settings.clear_store()
             self.session.cookies.clear()
         else:
             raise ValueError('Request Failed!\n\n{}'.format(response))
@@ -199,8 +202,13 @@ class CrunchyrollServer:
         }
 
         response = self.session.get(url, params=data, cookies=self.session.cookies).json()
-        if validate_request(response):
+
+        is_valid = validate_request(response)
+        if is_valid == True:
             return response['data']
+        elif isinstance(is_valid, ReAuthenticate):
+            self.login()
+            self.get_series_by_id(collection_id)
 
     @auth_required
     def get_series_id(self, query):
@@ -222,7 +230,8 @@ class CrunchyrollServer:
         }
 
         response = self.session.get(url, params=data, cookies=self.session.cookies).json()
-        if validate_request(response):
+        is_valid = validate_request(response)
+        if is_valid == True:
             search_results = response['data']
             if len(search_results) < 1:
                 return -1  # Some random value
@@ -238,6 +247,9 @@ class CrunchyrollServer:
 
                 else:
                     continue
+        elif isinstance(is_valid, ReAuthenticate):
+            self.login()
+            self.get_series_id(query)
         else:
             raise ValueError('Request Failed!\n\n{}'.format(response))
 
@@ -257,7 +269,8 @@ class CrunchyrollServer:
 
         response = self.session.get(url, params=data, cookies=self.session.cookies).json()
 
-        if validate_request(response):
+        is_valid = validate_request(response)
+        if is_valid == True:
             data = response['data']
 
             collections = []
@@ -281,6 +294,9 @@ class CrunchyrollServer:
                 collections.append(collection)
 
             return collections
+        elif isinstance(is_valid, ReAuthenticate):
+            self.login()
+            self.get_collections(series_id)
         else:
             raise ValueError('Request Failed!\n\n{}'.format(response))
 
@@ -353,7 +369,8 @@ class CrunchyrollServer:
         }
 
         response = self.session.get(url, params=data, cookies=self.session.cookies).json()
-        if validate_request(response):
+        is_valid = validate_request(response)
+        if is_valid == True:
             media_list = []
             episode_list = response['data']
 
@@ -380,7 +397,9 @@ class CrunchyrollServer:
                     playhead=ep['playhead']))
 
             return media_list
-
+        elif isinstance(is_valid, ReAuthenticate):
+            self.login()
+            self.get_episodes(collection_id, limit, offset)
         else:
             raise ValueError('Request Failed!\n\n{}'.format(response))
 
@@ -405,7 +424,8 @@ class CrunchyrollServer:
         }
 
         response = self.session.get(url, params=data, cookies=self.session.cookies).json()
-        if validate_request(response):
+        is_valid = validate_request(response)
+        if is_valid == True:
             stream_data = response['data']['stream_data']
             if not stream_data: 
                 return None
@@ -435,7 +455,9 @@ class CrunchyrollServer:
                     media_streams[quality] = media_stream
 
             return media_streams
-
+        elif isinstance(is_valid, ReAuthenticate):
+            self.login()
+            self.get_media_stream(media_id)
         else:
             raise ValueError('Request Failed!\n\n{}'.format(response))
 
@@ -456,7 +478,8 @@ class CrunchyrollServer:
         }
 
         response = self.session.get(url, params=data, cookies=self.session.cookies).json()
-        if validate_request(response):
+        is_valid = validate_request(response)
+        if is_valid == True:
             series = []
 
             for el in response['data']:
@@ -471,6 +494,8 @@ class CrunchyrollServer:
                 ))
 
             return series
-
+        elif isinstance(is_valid, ReAuthenticate):
+            self.login()
+            self.search(q, media_type, filter, limit, offset)
         else:
             raise ValueError('Request Failed!\n\n{}'.format(response))
