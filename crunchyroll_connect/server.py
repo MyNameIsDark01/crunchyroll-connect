@@ -50,7 +50,7 @@ def auth_required(function):
 
 
 class CrunchyrollServer:
-    def __init__(self, config: str, locale: str = 'enUS'):
+    def __init__(self, config: str, locale: str = 'enUS', proxy={}):
         self.domain = 'api.crunchyroll.com'
         self.token = 'LNDJgOit5yaRIWN'
         self.device_type = 'com.crunchyroll.windows.desktop'
@@ -59,6 +59,7 @@ class CrunchyrollServer:
         self.settings = Config(path=config)
         self.settings.init_store()
         self.session = requests.Session()
+        self.session.proxies = proxy
 
     def get_url(self, req):
         if not isinstance(req, RequestType):
