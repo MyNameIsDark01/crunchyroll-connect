@@ -23,7 +23,7 @@ def validate_request(req):
 
     if not err and code == 'ok':
         return True
-    elif err in ["bad_session"]:
+    elif code in ["bad_session"]:
         return ReAuthenticate()
     else:
         return False
